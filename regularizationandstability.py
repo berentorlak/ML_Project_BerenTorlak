@@ -109,3 +109,31 @@ print("\ny_test_conc_norm - Shape:", y_test_conc_norm.shape)
 print("Mean:", y_test_conc_norm.mean(axis=0))
 print("Std:", y_test_conc_norm.std(axis=0))
 
+# STABILITY 
+
+def stability(X_train, y_train, X_test, lam):
+    n = len(X_train)
+
+    w_all = ridge_regression(X_train, y_train, lam)
+    predict_all = predict(X_test, w_all)
+    total_difference = 0.0
+
+    for i in range(n):
+        X_loo = np.delete(X_train, i, axis=0) # leave one out
+        y_loo = np.delete(y_train, i)
+
+        w_loo = ridge_regression(X_loo, y_loo, lam) # train again like that
+        predict_loo = predict(X_test, w_loo)
+        
+        difference = np.mean(np.abs(predict_all - predict_loo))
+        total_difference += difference
+
+    return total_difference / n
+
+for lam in [0, 0.1, 1.0, 5.0, 10.0, 20.0, 50.0, 100.0]:
+    Stability = stability(X_train, y_train, X_test, lam)
+    print(f"λ: {lam:6}, Stability: {Stability:.6f}")  
+
+for lam in [100, 500, 1000, 5000, 10000]:
+    Stability = stability(X_train_conc_norm, y_train_conc_norm, X_test_conc_norm, lam)
+    print(f"λ: {lam:6}, Stability: {Stability:.6f}")  
