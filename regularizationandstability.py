@@ -275,3 +275,37 @@ plt.ylabel('Test MSE')
 plt.title('Concrete Test Error vs Stability')
 plt.grid(True)
 plt.show()
+
+# Extension 2: effect of the dataset's size on stability
+sample_size = [100, 200, 500, 1000]
+
+result_size = {}
+
+for n in sample_size:
+    np.random.seed(42)
+    X_s = np.random.randn(n, 8)
+    y_s = X_s @ true_weight + 2.0 * np.random.randn(n)
+    
+    split = int(0.8 * n)
+    X_tr, X_te = X_s[:split], X_s[split:]
+    y_tr, y_te = y_s[:split], y_s[split:]
+    
+    stabilities = []
+    for lam in lambda_synthetic:
+        stab = stability(X_tr, y_tr, X_te, lam)
+        stabilities.append(stab)
+    
+    result_size[n] = stabilities
+    print(f"n={n} is done.")
+
+plt.figure(figsize=(8, 5))
+for n in sample_size:
+    plt.plot(lambda_synthetic, result_size[n], marker='o', label=f'n={n}')
+plt.xscale('symlog')
+plt.xlabel('λ')
+plt.ylabel('Stability')
+plt.title('Stability vs λ (Effect of Dataset Size)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
