@@ -309,3 +309,151 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
+# Extension 3 L1 vs L2
+
+# soft threshold function for Lasso
+def soft_thresholding(z, lam):
+    if z < -lam:
+        return z + lam
+    elif z > lam:
+        return z - lam
+    else:
+        return 0.0
+    
+# since Lasso does not have a closed solution, we will use coordinate descent 
+def lasso_coordinate_descent(X, y, lam, max_iteration=1000, tol=1e-4):
+    n, d = X.shape
+    w = np.zeros(d)
+    
+    for iteration in range(max_iteration):
+        w_pr = w.copy() # we keep the previous weight
+        
+        for j in range(d):
+            y_pred = X @ w
+            residual = y - y_pred + X[:, j] * w[j]
+            z = np.dot(X[:, j], residual) / n
+
+            w[j] = soft_thresholding(z, lam)
+
+            if np.max(np.abs(w - w_pr)) < tol:
+                break
+    return w
+
+
+lambdas_ex3 = [0.001, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2]
+
+#Synthetic
+results_L2_s = {'train_err': [], 'test_err': [], 'sparsity': []}
+results_L1_s = {'train_err': [], 'test_err': [], 'sparsity': []}
+
+for lam in lambdas_ex3:
+    # Ridge
+    w_L2 = ridge_regression(X_train, y_train, lam=lam)
+    results_L2_s['train_err'].append(mse(y_train, predict(X_train, w_L2)))
+    results_L2_s['test_err'].append(mse(y_test, predict(X_test, w_L2)))
+    results_L2_s['sparsity'].append(np.sum(w_L2 == 0))
+    
+    # Lasso
+    w_L1 = lasso_coordinate_descent(X_train, y_train, lam=lam)
+    results_L1_s['train_err'].append(mse(y_train, predict(X_train, w_L1)))
+    results_L1_s['test_err'].append(mse(y_test, predict(X_test, w_L1)))
+    results_L1_s['sparsity'].append(np.sum(w_L1 == 0))
+
+print("λ | Ridge Test | Lasso Test | Ridge Zeros | Lasso Zeros")
+for i, lam in enumerate(lambdas_ex3):
+    print(f"{lam:.3f} | "
+          f"{results_L2_s['test_err'][i]:.4f} | "
+          f"{results_L1_s['test_err'][i]:.4f} | "
+          f"{results_L2_s['sparsity'][i]} | "
+          f"{results_L1_s['sparsity'][i]}")
+    
+
+# Concrete
+""""
+print("Concrete Lasso Lambda Interval Test")
+for lam in [0.001, 0.01, 0.05, 0.1, 0.5, 1.0]:
+    w_L1 = lasso_coordinate_descent(X_train_conc_norm, y_train_conc_norm, lam=lam)
+    zeros = np.sum(w_L1 == 0)
+    test_err = mse(y_test_conc_norm, predict(X_test_conc_norm, w_L1))
+    print(f"λ={lam} | Zero weights: {zeros}/8 | Test MSE: {test_err:.4f}")
+"""
+
+results_L2_c = {'train_err': [], 'test_err': [], 'sparsity': []}
+results_L1_c = {'train_err': [], 'test_err': [], 'sparsity': []}
+
+for lam in lambdas_ex3:
+    # Ridge
+    w_L2 = ridge_regression(X_train_conc_norm, y_train_conc_norm, lam=lam)
+    results_L2_c['train_err'].append(mse(y_train_conc_norm, predict(X_train_conc_norm, w_L2)))
+    results_L2_c['test_err'].append(mse(y_test_conc_norm, predict(X_test_conc_norm, w_L2)))
+    results_L2_c['sparsity'].append(np.sum(w_L2 == 0))
+    
+    # Lasso
+    w_L1 = lasso_coordinate_descent(X_train_conc_norm, y_train_conc_norm, lam=lam)
+    results_L1_c['train_err'].append(mse(y_train_conc_norm, predict(X_train_conc_norm, w_L1)))
+    results_L1_c['test_err'].append(mse(y_test_conc_norm, predict(X_test_conc_norm, w_L1)))
+    results_L1_c['sparsity'].append(np.sum(w_L1 == 0))
+
+print("λ | Ridge Test | Lasso Test | Ridge Zeros | Lasso Zeros")
+for i, lam in enumerate(lambdas_ex3):
+    print(f"{lam:.3f} | "
+          f"{results_L2_c['test_err'][i]:.4f} | "
+          f"{results_L1_c['test_err'][i]:.4f} | "
+          f"{results_L2_c['sparsity'][i]} | "
+          f"{results_L1_c['sparsity'][i]}")
+    
+
+# Graphs
+# Synthetic L1 vs L2 Graph
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+fig.suptitle('(Synthetic) L1 vs L2', fontsize=13)
+
+axes[0].plot(lambdas_ex3, results_L2_s['test_err'],
+             marker='o', label='Ridge (L2)', color='pink')
+axes[0].plot(lambdas_ex3, results_L1_s['test_err'],
+             marker='o', label='Lasso (L1)', color='green')
+axes[0].set_xlabel('λ')
+axes[0].set_ylabel('Test MSE')
+axes[0].set_title('Test Error')
+axes[0].legend()
+axes[0].grid(True)
+
+axes[1].plot(lambdas_ex3, results_L1_s['sparsity'],
+             marker='o', label='Lasso (L1)', color='green')
+axes[1].plot(lambdas_ex3, results_L2_s['sparsity'],
+             marker='o', label='Ridge (L2)', color='pink')
+axes[1].set_xlabel('λ')
+axes[1].set_ylabel('# of Zero Weights')
+axes[1].set_title('Sparsity')
+axes[1].legend()
+axes[1].grid(True)
+
+plt.tight_layout()
+plt.show()
+
+# Concrete L1 vs L2
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+fig.suptitle('Concrete — L1 vs L2', fontsize=13)
+
+axes[0].plot(lambdas_ex3, results_L2_c['test_err'],
+             marker='o', label='Ridge (L2)', color='pink')
+axes[0].plot(lambdas_ex3, results_L1_c['test_err'],
+             marker='o', label='Lasso (L1)', color='green')
+axes[0].set_xlabel('λ')
+axes[0].set_ylabel('Test MSE')
+axes[0].set_title('Test Error')
+axes[0].legend()
+axes[0].grid(True)
+
+axes[1].plot(lambdas_ex3, results_L1_c['sparsity'],
+             marker='o', label='Lasso (L1)', color='green')
+axes[1].plot(lambdas_ex3, results_L2_c['sparsity'],
+             marker='o', label='Ridge (L2)', color='pink')
+axes[1].set_xlabel('λ')
+axes[1].set_ylabel('# of Zero Weights')
+axes[1].set_title('Sparsity')
+axes[1].legend()
+axes[1].grid(True)
+
+plt.tight_layout()
+plt.show()
