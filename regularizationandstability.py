@@ -250,7 +250,7 @@ plt.figure(figsize=(8, 5))
 plt.scatter(results_synthetic['stability'][:cutoff], results_synthetic['test_error'][:cutoff],
             color='purple', zorder= 5)
 
-for i, lam in enumerate(lambda_synthetic):
+for i, lam in enumerate(lambda_synthetic[:cutoff]):
     plt.annotate(f"λ={lam}", (results_synthetic['stability'][i], 
                               results_synthetic['test_error'][i]),
                  textcoords="offset points", xytext=(5, 5), fontsize=7)
@@ -277,11 +277,12 @@ plt.grid(True)
 plt.show()
 
 # Extension 2: effect of the dataset's size on stability
-sample_size = [100, 200, 500, 1000]
+#Synthetic
+sample_size_synthetic = [100, 200, 500, 1000]
 
-result_size = {}
+result_size_synthetic = {}
 
-for n in sample_size:
+for n in sample_size_synthetic:
     np.random.seed(42)
     X_s = np.random.randn(n, 8)
     y_s = X_s @ true_weight + 2.0 * np.random.randn(n)
@@ -295,12 +296,12 @@ for n in sample_size:
         stab = stability(X_tr, y_tr, X_te, lam)
         stabilities.append(stab)
     
-    result_size[n] = stabilities
+    result_size_synthetic[n] = stabilities
     print(f"n={n} is done.")
 
 plt.figure(figsize=(8, 5))
-for n in sample_size:
-    plt.plot(lambda_synthetic, result_size[n], marker='o', label=f'n={n}')
+for n in sample_size_synthetic:
+    plt.plot(lambda_synthetic, result_size_synthetic[n], marker='o', label=f'n={n}')
 plt.xscale('symlog')
 plt.xlabel('λ')
 plt.ylabel('Stability')
@@ -308,6 +309,41 @@ plt.title('Stability vs λ (Effect of Dataset Size)')
 plt.legend()
 plt.grid(True)
 plt.show()
+
+# Concrete
+sample_size_concrete = [200, 400, 600, 824]  # 824 full train set
+
+result_size_concrete = {}
+
+for n in sample_size_concrete:
+    np.random.seed(42) # we choose random points from train set
+    indices = np.random.choice(len(X_train_conc_norm), n, replace=False)
+    X_c = X_train_conc_norm[indices]
+    y_c = y_train_conc_norm[indices]
+    
+    split = int(0.8 * n)
+    X_tr, X_te = X_c[:split], X_c[split:]
+    y_tr, y_te = y_c[:split], y_c[split:]
+    
+    stabilities = []
+    for lam in lambda_concrete:
+        stab = stability(X_tr, y_tr, X_test_conc_norm, lam)
+        stabilities.append(stab)
+    
+    result_size_concrete[n] = stabilities
+    print(f"n={n} is done.")
+
+plt.figure(figsize=(8, 5))
+for n in sample_size_concrete:
+    plt.plot(lambda_concrete, result_size_concrete[n], marker='o', label=f'n={n}')
+plt.xscale('log')
+plt.xlabel('λ')
+plt.ylabel('Stability')
+plt.title('Stability vs λ (Effect of Dataset Size (Concrete))')
+plt.legend()
+plt.grid(True)
+plt.show()
+
 
 # Extension 3 L1 vs L2
 
@@ -335,7 +371,7 @@ def lasso_coordinate_descent(X, y, lam, max_iteration=1000, tol=1e-4):
 
             w[j] = soft_thresholding(z, lam)
 
-            if np.max(np.abs(w - w_pr)) < tol:
+        if np.max(np.abs(w - w_pr)) < tol:
                 break
     return w
 
@@ -433,7 +469,7 @@ plt.show()
 
 # Concrete L1 vs L2
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-fig.suptitle('Concrete — L1 vs L2', fontsize=13)
+fig.suptitle('(Concrete) L1 vs L2', fontsize=13)
 
 axes[0].plot(lambdas_ex3, results_L2_c['test_err'],
              marker='o', label='Ridge (L2)', color='pink')
