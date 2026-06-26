@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 np.random.seed(42)
 
-n, d= 500, 8
-true_weight= np.random.randn(d)
+n, d = 500, 8
+true_weight = np.array([1.5, -2.0, 0.8, 0.0, 0.0, 0.0, 1.2, 0.0])
 X= np.random.randn(n, d)
 y= X @ true_weight + 2.0 * np.random.randn(n)
 
